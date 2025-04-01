@@ -1,7 +1,7 @@
 import plotly.express as px
 from dash import dcc, html
 
-from src.utils.compression_utils import compress_dict
+from src.utils.data_utils import compress_dict
 
 
 def browser_cache(mlcoach_url, data_clinic_url):
@@ -23,6 +23,7 @@ def browser_cache(mlcoach_url, data_clinic_url):
                 id="label-dict-per-page",
                 data={},
             ),
+            dcc.Store(id="project-name", data=""),
         ],
     )
     return browser_cache

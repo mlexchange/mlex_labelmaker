@@ -9,8 +9,20 @@ from file_manager.data_project import DataProject
 
 from src.app_layout import TILED_KEY, cache, logger
 from src.query import Query
-from src.utils.compression_utils import decompress_dict
+from src.utils.data_utils import decompress_dict, hash_list_of_strings
 from src.utils.plot_utils import draw_rows, parse_full_screen_content
+
+
+@callback(
+    Output("project-name", "data"),
+    Input({"base_id": "file-manager", "name": "data-project-dict"}, "data"),
+    prevent_initial_call=True,
+)
+def update_project_name(data_project_dict):
+    data_project = DataProject.from_dict(data_project_dict)
+    data_uris = [dataset.uri for dataset in data_project.datasets]
+    project_name = hash_list_of_strings(data_uris)
+    return project_name
 
 
 @callback(
