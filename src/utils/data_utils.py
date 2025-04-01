@@ -1,6 +1,9 @@
 import base64
 import gzip
+import hashlib
 import json
+
+from humanhash import humanize
 
 
 def compress_dict(data):
@@ -29,3 +32,12 @@ def decompress_dict(base64_data):
     json_data = gzip.decompress(compressed_data)
     data = json.loads(json_data.decode("utf-8"))
     return data
+
+
+def hash_list_of_strings(strings_list):
+    """
+    Produces a hash of a list of strings.
+    """
+    concatenated = "".join(strings_list)
+    digest = hashlib.sha256(concatenated.encode("utf-8")).hexdigest()
+    return humanize(digest)
