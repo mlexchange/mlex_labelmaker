@@ -3,7 +3,7 @@ import numpy as np
 from dash import Input, Output, State, callback
 
 from src.labels import Labels
-from src.utils.compression_utils import decompress_dict
+from src.utils.data_utils import decompress_dict
 
 
 @callback(

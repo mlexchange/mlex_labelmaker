@@ -8,7 +8,7 @@ from dash import ALL, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
 from src.query import Query
-from src.utils.compression_utils import decompress_dict
+from src.utils.data_utils import decompress_dict
 
 
 @callback(
