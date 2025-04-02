@@ -1,13 +1,19 @@
 import logging
+import os
 from itertools import chain
 
 import numpy as np
-import pandas as pd
 from scipy.spatial.distance import cdist
 
 from src.labels import Labels
+from src.utils.data_utils import TiledDataLoader
 
 logging.basicConfig(encoding="utf-8", level=logging.INFO)
+
+RESULTS_TILED_URI = os.getenv("RESULTS_TILED_URI", "")
+RESULTS_TILED_API_KEY = os.getenv("RESULTS_TILED_API_KEY", None)
+
+results_tiled_dataloader = TiledDataLoader(RESULTS_TILED_URI, RESULTS_TILED_API_KEY)
 
 
 class Query(Labels):
@@ -36,9 +42,9 @@ class Query(Labels):
         unlabeled_indices = set(range(self.num_imgs)) - set(labeled_indices)
         return list(unlabeled_indices)
 
-    def similarity_search(self, model_path, index_interest):
+    def similarity_search(self, trimmed_uri, index_interest):
         unlabeled_indx = self.hide_labeled()  # Get list of indexes of unlabeled images
-        df_model = pd.read_parquet(model_path, engine="pyarrow")
+        df_model = results_tiled_dataloader.get_data_by_trimmed_uri(trimmed_uri).read()
         dist = cdist(
             df_model.iloc[index_interest, :].values[np.newaxis, :],
             df_model.loc[unlabeled_indx].values,
