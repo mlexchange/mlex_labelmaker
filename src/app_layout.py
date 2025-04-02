@@ -44,7 +44,6 @@ load_dotenv(".env")
 
 MLCOACH_URL = os.getenv("MLCOACH_URL")
 DATA_CLINIC_URL = os.getenv("DATA_CLINIC_URL")
-SPLASH_URL = os.getenv("SPLASH_URL")
 MLEX_COMPUTE_URL = os.getenv("MLEX_COMPUTE_URL")
 DEFAULT_TILED_URI = os.getenv("DEFAULT_TILED_URI")
 DEFAULT_TILED_SUB_URI = os.getenv("DEFAULT_TILED_SUB_URI")

@@ -6,7 +6,6 @@ x-environment: &commonEnvironment
     PROJECT_ID: "-1"
     MLCOACH_URL: "http://localhost:8062"
     DATA_CLINIC_URL: "http://localhost:8072"
-    SPLASH_URL: http://splash:80/api/v0
     MLEX_COMPUTE_URL: ${MLEX_COMPUTE_URL}
     MLEX_CONTENT_URL: ${MLEX_CONTENT_URL}
     HOST_NICKNAME: "local"
@@ -17,37 +16,6 @@ x-environment: &commonEnvironment
 
 services:
 
-  # MongoDB
-  splash_db:
-    image: mongo:4.4
-    container_name: "splash_db"
-    working_dir: /data/db
-    volumes:
-      - "${PWD}/database:/data/db"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
-    networks:
-      - computing_api_default
-
-  splash:
-    image: ghcr.io/als-computing/splash-ml:master
-    container_name: "splash"
-    environment:
-       APP_MODULE: "tagging.api:app"
-       LOGLEVEL: DEBUG
-       MONGO_DB_URI: mongodb://${MONGO_DB_USERNAME}:${MONGO_DB_PASSWORD}@splash_db:27017
-       MAX_WORKERS: 8
-    ports:
-      - "127.0.0.1:8085:80"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/api/splash_ml/docs#"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - computing_api_default
-
   labelmaker:
     container_name: "labelmaker"
     image: ghcr.io/mlexchange/mlex_labelmaker:main
@@ -57,9 +25,6 @@ services:
       - $DATA_DIR:/app/work/data
     ports:
       - 127.0.0.1:8057:8050
-    depends_on:
-      splash:
-        condition: service_healthy
     networks:
       - computing_api_default
 
@@ -72,9 +37,6 @@ services:
       - $DATA_DIR:/app/work/data
     ports:
       - 127.0.0.1:8062:8050
-    depends_on:
-      splash:
-        condition: service_healthy
     networks:
       - computing_api_default
 

@@ -7,7 +7,7 @@ def store_options():
         [
             dbc.Button(
                 "Load Labels from Server",
-                id="button-load-splash",
+                id="button-load-tiled",
                 outline="True",
                 color="success",
                 size="sm",
@@ -21,7 +21,7 @@ def store_options():
                         [
                             dbc.Button(
                                 "LOAD",
-                                id="confirm-load-splash",
+                                id="confirm-load-tiled",
                                 color="primary",
                                 outline=False,
                                 className="ms-auto",
@@ -30,12 +30,12 @@ def store_options():
                         ]
                     ),
                 ],
-                id="modal-load-splash",
+                id="modal-load-tiled",
                 is_open=False,
             ),
             dbc.Button(
                 "Save Labels to Server",
-                id="button-save-splash",
+                id="button-save-tiled",
                 outline="True",
                 color="primary",
                 size="sm",
@@ -54,7 +54,7 @@ def store_options():
                         [
                             dbc.Button(
                                 "SAVE",
-                                id="confirm-save-splash",
+                                id="confirm-save-tiled",
                                 color="primary",
                                 outline=False,
                                 className="ms-auto",
@@ -63,7 +63,7 @@ def store_options():
                         ]
                     ),
                 ],
-                id="modal-save-splash",
+                id="modal-save-tiled",
                 is_open=False,
             ),
             dbc.Button(

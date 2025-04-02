@@ -1,17 +1,17 @@
+import logging
 import time
-from datetime import datetime, timezone
 
 import dash
 import numpy as np
 import pandas as pd
-import requests
 from dash import ALL, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from src.app_layout import SPLASH_URL, logger
 from src.labels import Labels
-from src.utils.compression_utils import compress_dict, decompress_dict
+from src.utils.data_utils import compress_dict, decompress_dict
 from src.utils.plot_utils import create_label_component
+
+logger = logging.getLogger(__name__)
 
 
 @callback(
@@ -114,7 +114,7 @@ def label_selected_thumbnails_key_binds(
         else:
             raise PreventUpdate
     logger.debug(f"Updating labels after {time.time()-start}")
-    return compress_dict(vars(labels))
+    return compress_dict(labels.to_dict())
 
 
 @callback(
@@ -145,7 +145,7 @@ def label_selected_thumbnails_new_dataset(
     labels = Labels(**labels_dict)
     labels.init_labels(label_button_children)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return compress_dict(vars(labels))
+    return compress_dict(labels.to_dict())
 
 
 @callback(
@@ -184,7 +184,7 @@ def label_selected_thumbnails_probability(
     else:
         raise PreventUpdate
     logger.debug(f"Updating labels after {time.time()-start}")
-    return compress_dict(vars(labels))
+    return compress_dict(labels.to_dict())
 
 
 @callback(
@@ -217,7 +217,7 @@ def unlabel_selected_thumbnails(
     labels = Labels(**labels_dict)
     labels.manual_labeling(None, thumbnail_image_select_value, image_order)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return compress_dict(vars(labels))
+    return compress_dict(labels.to_dict())
 
 
 @callback(
@@ -258,7 +258,7 @@ def label_selected_thumbnails(
     label_class_value = label_button_children[indx]
     labels.manual_labeling(label_class_value, thumbnail_image_select_value, image_order)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return compress_dict(vars(labels))
+    return compress_dict(labels.to_dict())
 
 
 @callback(
@@ -307,7 +307,7 @@ def modify_label(
         labels.update_labels_list(rename_label=label_to_rename, new_name=new_label_name)
     label_comp = create_label_component(labels.labels_list, color_cycle)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return label_comp, compress_dict(vars(labels)), color_cycle
+    return label_comp, compress_dict(labels.to_dict()), color_cycle
 
 
 @callback(
@@ -335,7 +335,7 @@ def delete_label(
     color_cycle.pop(indx_label_to_delete)
     label_comp = create_label_component(labels.labels_list, color_cycle)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return label_comp, compress_dict(vars(labels)), color_cycle
+    return label_comp, compress_dict(labels.to_dict()), color_cycle
 
 
 @callback(
@@ -359,7 +359,7 @@ def add_new_label(
     labels.update_labels_list(add_label=add_label_name)
     label_comp = create_label_component(labels.labels_list, color_cycle)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return label_comp, compress_dict(vars(labels))
+    return label_comp, compress_dict(labels.to_dict())
 
 
 @callback(
@@ -392,61 +392,38 @@ def load_labels_from_probabilities(
         raise PreventUpdate
     label_comp = create_label_component(labels.labels_list, color_cycle)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return label_comp, probability_options, compress_dict(vars(labels))
+    return label_comp, probability_options, compress_dict(labels.to_dict())
 
 
 @callback(
     Output("event-id", "options"),
-    Output("modal-load-splash", "is_open"),
-    Input("button-load-splash", "n_clicks"),
-    Input("confirm-load-splash", "n_clicks"),
+    Output("modal-load-tiled", "is_open"),
+    Input("button-load-tiled", "n_clicks"),
+    Input("confirm-load-tiled", "n_clicks"),
+    State("labels-dict", "data"),
+    State("project-name", "data"),
     prevent_initial_call=True,
 )
-def load_from_splash_modal(load_n_click, confirm_load):
+def load_from_tiled_modal(load_n_click, confirm_load, labels_dict, project_name):
     """
-    Load labels from splash-ml associated with the project_id
+    Load labels from tiled associated with the project_name
     Args:
-        load_n_click:       Number of clicks in load from splash-ml button
-        confirm_load:       Number of clicks in confim button within loading from splash-ml modal
+        load_n_click:       Number of clicks in load from tiled button
+        confirm_load:       Number of clicks in confim button within loading from tiled modal
+        labels_dict:        Dictionary of labeled images, e.g.,
+                            {filename1: [label1, label2], ...}
+        project_name:       Name of the current project
     Returns:
         event_id:           Available tagging event IDs associated with the current data project
-        modal_load_splash:  True/False to open/close loading from splash-ml modal
+        modal_load_tiled:   True/False to open/close loading from tiled modal
     """
     changed_id = dash.callback_context.triggered[-1]["prop_id"]
     if (
-        changed_id == "confirm-load-splash.n_clicks"
+        changed_id == "confirm-load-tiled.n_clicks"
     ):  # if confirmed, load chosen tagging event
         return dash.no_update, False
 
-    response = requests.get(
-        f"{SPLASH_URL}/events", params={"page[offset]": 0, "page[limit]": 1000}
-    )
-    event_ids = response.json()
-
-    # Present the tagging event options with their corresponding tagger id and runtime
-    temp = []
-    for tagging_event in event_ids:
-        tagger_id = tagging_event["tagger_id"]
-        utc_tagging_event_time = tagging_event["run_time"]
-        tagging_event_time = datetime.strptime(
-            utc_tagging_event_time, "%Y-%m-%dT%H:%M:%S.%f"
-        )
-        tagging_event_time = (
-            tagging_event_time.replace(tzinfo=timezone.utc)
-            .astimezone(tz=None)
-            .strftime("%d-%m-%Y %H:%M:%S")
-        )
-        temp.append(
-            (
-                tagging_event_time,
-                {
-                    "label": f"Tagger ID: {tagger_id}, modified: {tagging_event_time}",
-                    "value": tagging_event["uid"],
-                },
-            )
-        )
-
-    # Sort temp by time in descending order and extract the dictionaries
-    options = [item[1] for item in sorted(temp, key=lambda x: x[0], reverse=True)]
-
+    labels_dict = decompress_dict(labels_dict)
+    labels = Labels(**labels_dict)
+    options = labels.get_events_ids(project_name)
     return options, True

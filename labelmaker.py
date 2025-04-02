@@ -44,7 +44,7 @@ from src.callbacks.manage_labels import (  # noqa: F401
     label_selected_thumbnails_key_binds,
     label_selected_thumbnails_new_dataset,
     label_selected_thumbnails_probability,
-    load_from_splash_modal,
+    load_from_tiled_modal,
     load_labels_from_probabilities,
     modify_label,
     toggle_color_picker_modal,
@@ -54,7 +54,7 @@ from src.callbacks.manage_labels import (  # noqa: F401
 from src.callbacks.update_models import update_trained_model_list  # noqa: F401
 from src.callbacks.warning import toggle_modal_unlabel_warning  # noqa: F401
 from src.labels import Labels
-from src.utils.compression_utils import compress_dict, decompress_dict
+from src.utils.data_utils import compress_dict, decompress_dict
 from src.utils.plot_utils import create_label_component
 
 APP_PORT = os.getenv("APP_PORT", 8057)
@@ -84,10 +84,11 @@ app.clientside_callback(
 @app.long_callback(
     Output("storage-modal", "is_open"),
     Output("storage-body-modal", "children"),
-    Input("confirm-save-splash", "n_clicks"),
+    Input("confirm-save-tiled", "n_clicks"),
     State({"base_id": "file-manager", "name": "data-project-dict"}, "data"),
     State("labels-dict", "data"),
     State("tagger-id", "value"),
+    State("project-name", "data"),
     manager=long_callback_manager,
     prevent_initial_call=True,
     running=[
@@ -96,21 +97,23 @@ app.clientside_callback(
     ],
     progress=[Output("store-progress", "value")],
 )
-def save_labels_to_splash(
+def save_labels_to_tiled(
     set_progress,
-    button_confirm_splash_n_clicks,
+    button_confirm_tiled_n_clicks,
     data_project_dict,
     labels_dict,
     tagger_id,
+    project_name,
 ):
     """
-    This callback saves the labels to disk or to splash-ml
+    This callback saves the labels to disk or to tiled
     Args:
-        button_confirm_splash_n_clicks: Button to confirm save to splash-ml
+        button_confirm_tiled_n_clicks: Button to confirm save to tiled
         data_project_dict:              Data project information
         labels_dict:                    Dictionary of labeled images (docker path), as follows:
                                         {filename1: [label1, label2], ...}
         tagger_id:                      ID to identify the user/tagger
+        project_name:                   Name of the project
     Returns:
         storage_modal_open:             Open/closes the confirmation message
         storage_body_modal:             Confirmation message
@@ -120,15 +123,10 @@ def save_labels_to_splash(
     if sum(labels.num_imgs_per_label.values()) > 0:
         # Load data project
         data_project = DataProject.from_dict(data_project_dict, api_key=TILED_KEY)
-
-        status = labels.save_to_splash(tagger_id, data_project, set_progress)
-        # Remove None elements
-        status = list(filter(None, status))
-        if len(status) == 0:
-            response = "Labels stored in splash-ml"
-        else:
-            response = f"Error. {status}"
-        return True, response
+        labels_tiled_url = labels.save_to_tiled(
+            tagger_id, data_project, project_name, set_progress
+        )
+        return True, f"Labels stored in tiled at {labels_tiled_url}"
 
     return True, "No labels to save"
 
@@ -136,11 +134,12 @@ def save_labels_to_splash(
 @app.long_callback(
     Output("label-buttons", "children", allow_duplicate=True),
     Output("labels-dict", "data", allow_duplicate=True),
-    Input("confirm-load-splash", "n_clicks"),
+    Input("confirm-load-tiled", "n_clicks"),
     State("labels-dict", "data"),
     State("event-id", "value"),
     State("color-cycle", "data"),
     State({"base_id": "file-manager", "name": "data-project-dict"}, "data"),
+    State("project-name", "data"),
     prevent_initial_call=True,
     running=[
         (Output("modal-store-progress", "is_open"), True, False),
@@ -152,22 +151,23 @@ def save_labels_to_splash(
     ],
     progress=[Output("store-progress", "value")],
 )
-def load_labels_from_splash(
+def load_labels_from_tiled(
     set_progress,
-    load_splash_n_clicks,
+    load_tiled_n_clicks,
     labels_dict,
     event_id,
     color_cycle,
     data_project_dict,
+    project_name,
 ):
     start = time.time()
     labels_dict = decompress_dict(labels_dict)
     labels = Labels(**labels_dict)
     data_project = DataProject.from_dict(data_project_dict, api_key=TILED_KEY)
-    labels.load_splash_labels(data_project, event_id, set_progress)
+    labels.load_tiled_labels(data_project, event_id, project_name, set_progress)
     label_comp = create_label_component(labels.labels_list, color_cycle)
     logger.debug(f"Updating labels after {time.time()-start}")
-    return label_comp, compress_dict(vars(labels))
+    return label_comp, compress_dict(labels.to_dict())
 
 
 @app.long_callback(
@@ -289,22 +289,22 @@ def close_storage_modal(close_modal_n_clicks):
 
 
 @app.callback(
-    Output("modal-save-splash", "is_open", allow_duplicate=True),
-    Input("button-save-splash", "n_clicks"),
-    Input("confirm-save-splash", "n_clicks"),
-    State("modal-save-splash", "is_open"),
+    Output("modal-save-tiled", "is_open", allow_duplicate=True),
+    Input("button-save-tiled", "n_clicks"),
+    Input("confirm-save-tiled", "n_clicks"),
+    State("modal-save-tiled", "is_open"),
     prevent_initial_call=True,
 )
-def toggle_splash_modal(
-    button_save_splash_n_clicks,
-    button_confirm_splash_n_clicks,
+def toggle_tiled_modal(
+    button_save_tiled_n_clicks,
+    button_confirm_tiled_n_clicks,
     storage_modal_open,
 ):
     """
-    This callback toggles the splash modal
+    This callback toggles the tiled modal
     Args:
-        button_save_splash_n_clicks:    Button to save to splash-ml
-        button_confirm_splash_n_clicks: Button to confirm save to splash-ml
+        button_save_tiled_n_clicks:    Button to save to tiled
+        button_confirm_tiled_n_clicks: Button to confirm save to tiled
     Returns:
         storage_modal_open:             Open/closes the confirmation message
     """

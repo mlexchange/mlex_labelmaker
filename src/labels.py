@@ -7,15 +7,21 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from functools import partial
 from pathlib import Path
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-import requests
-from requests.adapters import Retry
 
-from src.app_layout import SPLASH_URL
+from src.utils.data_utils import TiledDataLoader
 
 logging.basicConfig(encoding="utf-8", level=logging.INFO)
+
+
+LABELS_TILED_URI = os.getenv("LABELS_TILED_URI", "http://localhost:8888")
+LABELS_TILED_API_KEY = os.getenv("LABELS_TILED_API_KEY", None)
+USER = os.getenv("USER", "user")
+
+labels_tiled_dataloader = TiledDataLoader(LABELS_TILED_URI, LABELS_TILED_API_KEY)
 
 
 class Labels:
@@ -27,6 +33,13 @@ class Labels:
         else:
             self.num_imgs_per_label = num_imgs_per_label
         pass
+
+    def to_dict(self):
+        return {
+            "labels_dict": self.labels_dict,
+            "labels_list": self.labels_list,
+            "num_imgs_per_label": self.num_imgs_per_label,
+        }
 
     def init_labels(self, labels_list=None):
         """
@@ -152,149 +165,122 @@ class Labels:
         self.assign_labels(label, indexes_to_label)
         pass
 
-    def _get_splash_dataset(self, project_id):
+    def load_tiled_labels(self, data_project, event_id, project_name, set_progress):
         """
-        Retrieve the current data set of interest from splash-ml with their labels
+        Query labels from tiled
         Args:
-            project_id:     Data project_id
-        """
-        uri_list = list(self.labels_dict.keys())
-        url = f"{SPLASH_URL}/datasets/search"
-        params = {"page[offset]": 0, "page[limit]": len(uri_list)}
-        data = {"uris": uri_list, "project": project_id}
-        status = requests.post(url, params=params, json=data)
-        if status.status_code != 200:
-            logging.error(
-                f"Data set was not retrieved from splash-ml due to {status.status_code}: \
-                          {status.json()}"
-            )
-        return status.json()
-
-    def load_splash_labels(self, data_project, event_id, set_progress):
-        """
-        Query labels from splash-ml
-        Args:
-            project_id:     Data project_id
+            project_name:     Data project_name
             event_id:      [str] Event id
+            project_name:     Data project_name
             set_progress:   [dbc.Progress] Progress bar
         """
-        project_id = data_project.project_id
-        datasets = self._get_splash_dataset(project_id)
+        # Get the labels from the tagging event in tiled
+        expected_url = f"/{USER}/{project_name}/labels/{event_id}"
+        event_client = labels_tiled_dataloader.get_data_by_trimmed_uri(expected_url)
+        labels = list(event_client)
+        len_dataset = len(labels)
+
         self.init_labels()  # resets dict and label before loading data
-        len_dataset = len(datasets)
-        for indx, dataset in enumerate(datasets):
-            for tag in dataset["tags"]:
-                if tag["event_id"] == event_id:
-                    label = tag["name"]
-                    if label not in self.labels_list:
-                        self.update_labels_list(add_label=label)
-                    index = data_project.get_index(dataset["uri"])
-                    self.assign_labels(label, [index])
+        for indx, label in enumerate(labels):
+            label_metadata = event_client[label].metadata
+            uri = label_metadata["uri"]
+            label = label_metadata["label"]
+            if label not in self.labels_list:
+                self.update_labels_list(add_label=label)
+            index = data_project.get_index(uri)
+            self.assign_labels(label, [index])
             set_progress(indx / len_dataset * 100)
         pass
 
-    def save_to_splash(self, tagger_id, data_project, set_progress):
+    def get_events_ids(self, project_name):
+        trimmed_uri = f"/{USER}/{project_name}/labels"
+        labels_client = labels_tiled_dataloader.get_data_by_trimmed_uri(trimmed_uri)
+        event_options = []
+        for event_id in labels_client.keys():
+            expected_url = f"/{USER}/{project_name}/labels/{event_id}"
+            event_metadata = labels_tiled_dataloader.get_metadata_by_trimmed_uri(
+                expected_url
+            )
+            tagger_id = event_metadata.get("tagger_id", "Unknown")
+            tagging_event_time = event_metadata.get("run_time", "Unknown")
+            event_options.append(
+                {
+                    "label": f"Tagger ID: {tagger_id}, modified: {tagging_event_time}",
+                    "value": event_id,
+                }
+            )
+        return event_options
+
+    def save_to_tiled(self, tagger_id, data_project, project_name, set_progress):
         """
-        Save labels to splash-ml.
+        Save labels to tiled
         Args:
             tagger_id:      [str] Tagger id
             datasets:       [list of dict] Data Project
-            project_id:     Data project_id
+            project_name:     Data project_name
             set_progress:   [dbc.Progress] Progress bar
-        Returns:
-            Request status
         """
-        splash_session = requests.Session()
-        retries = Retry(
-            total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504]
+        event_id = str(uuid4())
+        labels_client = labels_tiled_dataloader.prepare_project_container(
+            USER, project_name
         )
-        adapter = requests.adapters.HTTPAdapter(
-            max_retries=retries, pool_connections=100, pool_maxsize=100
+        event_client = labels_client.create_container(
+            key=event_id,
+            metadata={"tagger_id": tagger_id, "run_time": str(datetime.utcnow())},
         )
-        splash_session.mount("http://", adapter)
-        splash_session.mount("https://", adapter)
-        # Request new tagging event
-        project_id = data_project.project_id
-        event_status = splash_session.post(
-            f"{SPLASH_URL}/events",
-            json={"tagger_id": tagger_id, "run_time": str(datetime.utcnow())},
-        ).json()
-        event_id = event_status["uid"]
 
-        # Define partial function to save one dataset to splash
-        partial_save_one_dataset_to_splash = partial(
-            self._save_one_dataset_to_splash,
+        # Define partial function to save one dataset to tiled
+        partial_save_label_to_tiled = partial(
+            self._save_label_to_tiled,
             labels_list=self.labels_list,
-            project_id=project_id,
+            project_name=project_name,
             event_id=event_id,
-            splash_session=splash_session,
+            tiled_client=event_client,
         )
 
         indexes = self.labels_dict.keys()
         indexes = list(map(int, indexes))
         uri_list = data_project.read_datasets(indexes, just_uri=True)
 
-        # Save all datasets to splash
+        # Save all datasets to tiled
         with ThreadPoolExecutor() as executor:
             # Start all the tasks
             futures = {
-                executor.submit(partial_save_one_dataset_to_splash, uri, labels)
+                executor.submit(partial_save_label_to_tiled, uri, labels)
                 for uri, labels in zip(uri_list, self.labels_dict.values())
             }
 
-            statuses = []
             for i, future in enumerate(as_completed(futures), 1):
-                status = future.result()
-                statuses.append(status)
+                future.result()
                 set_progress(i / len(futures) * 100)
-        return statuses
+        return event_client.uri
 
     @staticmethod
-    def _save_one_dataset_to_splash(
+    def _save_label_to_tiled(
         uri,
         label_index,
         labels_list,
-        project_id,
+        project_name,
         event_id,
-        splash_session,
+        tiled_client,
     ):
         if len(label_index) > 0:
             label = labels_list[label_index[0]]
             # TODO: Add support for multiple labels per image
 
-            # Check if dataset already exists in splash
-            splash_dataset = splash_session.get(
-                f"{SPLASH_URL}/datasets",
-                params={"project": project_id, "uris": [uri]},
-            ).json()
+            label_id = str(uuid4())
+            label_metadata = {
+                "uri": uri,
+                "type": "tiled" if "http" in uri else "file",
+                "label": str(label),
+            }
 
-            # If dataset exists, add tag to dataset
-            if len(splash_dataset) > 0:
-                dataset_uid = splash_dataset[0]["uid"]
-                tag = {"name": str(label), "event_id": event_id}
-                data = {"add_tags": [tag]}
-                response = splash_session.patch(
-                    f"{SPLASH_URL}/datasets/{dataset_uid}/tags", json=data
-                )
-            # If dataset does not exist, create new dataset
-            else:
-                new_dataset = {
-                    "uri": uri,
-                    "type": "tiled" if "http" in uri else "file",
-                    "project": project_id,
-                }
-                new_dataset["tags"] = [{"name": str(label), "event_id": event_id}]
-                response = splash_session.post(
-                    f"{SPLASH_URL}/datasets", json=[new_dataset]
-                )
-
-            status = None
-            if response.status_code != 200:
-                logging.error(f"{status} Error: {response.json()}.")
-                status = f"Data set: {uri} with label {label} ended with status {response.status_code}."
-            return status
-        else:
-            return None
+            try:
+                tiled_client.create_container(key=label_id, metadata=label_metadata)
+            except Exception as e:
+                logging.error(f"Error: {e}")
+                return f"Data set: {uri} with label {label} ended with status {e}."
+        pass
 
     def save_to_table(self, data_project, set_progress):
         """
