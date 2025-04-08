@@ -1,4 +1,5 @@
 import logging
+import random
 import time
 
 import dash
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 @callback(
     Output("color-picker-modal", "is_open"),
+    Output("label-color-picker", "value"),
     Input({"type": "color-label-button", "index": ALL}, "n_clicks"),
     Input("modify-list", "n_clicks"),
     Input("modify-label-button", "n_clicks"),
@@ -33,11 +35,11 @@ def toggle_color_picker_modal(
         Opens or closes the color picker modal
     """
     if any(color_label_n_clicks) or modify_list_n_clicks > 0:
-        return True
+        return True, {"hex": "#{:06x}".format(random.randint(0, 0xFFFFFF))}
     elif submit_n_clicks:
-        return False
+        return False, no_update
     else:
-        return dash.no_update
+        return no_update, no_update
 
 
 @callback(
@@ -258,7 +260,7 @@ def label_selected_thumbnails(
     labels_dict = decompress_dict(labels_dict)
     labels = Labels(**labels_dict)
     indx = np.argmax(label_button_n_clicks)
-    label_class_value = label_button_children[indx]
+    label_class_value = label_button_children[indx]["props"]["children"][1]
     labels.manual_labeling(label_class_value, thumbnail_image_select_value, image_order)
     logger.debug(f"Updating labels after {time.time()-start}")
     return compress_dict(labels.to_dict())
@@ -268,10 +270,10 @@ def label_selected_thumbnails(
     Output("label-buttons", "children", allow_duplicate=True),
     Output("labels-dict", "data", allow_duplicate=True),
     Output("color-cycle", "data"),
-    Output("modify-list", "n_clicks"),
     Input("modify-label-button", "n_clicks"),
     State("labels-dict", "data"),
     State({"type": "color-label-button", "index": ALL}, "n_clicks_timestamp"),
+    State("modify-list", "n_clicks_timestamp"),
     State("label-color-picker", "value"),
     State("color-cycle", "data"),
     State("modify-label-name", "value"),
@@ -282,6 +284,7 @@ def modify_label(
     modify_label_n_clicks,
     labels_dict,
     color_label_t_clicks,
+    modify_list_t_clicks,
     new_color,
     color_cycle,
     new_label_name,
@@ -307,7 +310,10 @@ def modify_label(
     start = time.time()
     labels_dict = decompress_dict(labels_dict)
     labels = Labels(**labels_dict)
-    if modify_label_n_clicks == 0:
+    if (
+        len(color_label_t_clicks) > 0
+        and max(color_label_t_clicks) > modify_label_n_clicks
+    ):
         mod_indx = color_label_t_clicks.index(max(color_label_t_clicks))
         color_cycle[mod_indx] = new_color["hex"]
         if new_label_name != "":
@@ -317,14 +323,14 @@ def modify_label(
             )
         label_comp = create_label_component(labels.labels_list, color_cycle)
         logger.debug(f"Updating labels after {time.time()-start}")
-        return label_comp, compress_dict(labels.to_dict()), color_cycle, no_update
+        return label_comp, compress_dict(labels.to_dict()), color_cycle
     else:
         num_labels = len(labels.labels_list)
         color_cycle[num_labels] = new_color["hex"]
         labels.update_labels_list(add_label=new_label_name)
         label_comp = create_label_component(labels.labels_list, color_cycle)
         logger.debug(f"Updating labels after {time.time()-start}")
-        return label_comp, compress_dict(labels.to_dict()), color_cycle, 0
+        return label_comp, compress_dict(labels.to_dict()), color_cycle
 
 
 @callback(
@@ -438,7 +444,7 @@ def load_from_tiled_modal(load_n_click, confirm_load, labels_dict, project_name)
     if (
         changed_id == "confirm-load-tiled.n_clicks"
     ):  # if confirmed, load chosen tagging event
-        return dash.no_update, False
+        return no_update, False
 
     labels_dict = decompress_dict(labels_dict)
     labels = Labels(**labels_dict)
