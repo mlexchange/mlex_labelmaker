@@ -2,6 +2,9 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 from dash import dcc, html
 from dash_extensions import EventListener
+from mlex_utils.dash_utils.components_bootstrap.component_utils import (
+    DbcControlItem as ControlItem,
+)
 
 
 def create_label_button(label_text, label_color, indx):
@@ -14,55 +17,48 @@ def create_label_button(label_text, label_color, indx):
     Returns:
         label_comp:     Dash component with label button
     """
-    label_comp = dbc.Row(
+    label_comp = html.Div(
         [
-            dbc.Col(
-                dbc.Button(
-                    label_text,
-                    id={"type": "label-button", "index": indx},
-                    n_clicks_timestamp=0,
-                    size="sm",
-                    style={
-                        "background-color": label_color,
-                        "border-color": label_color,
-                        "color": "black",
-                        "width": "100%",
-                    },
+            dbc.Button(
+                html.Span(
+                    [
+                        html.Span(
+                            style={
+                                "display": "inline-block",
+                                "width": "14px",
+                                "height": "14px",
+                                "backgroundColor": label_color,
+                                "marginRight": "8px",
+                                "borderRadius": "2px",
+                            }
+                        ),
+                        label_text,
+                    ]
                 ),
-                width=10,
-                style={"margin-right": "2%", "width": "80%"},
+                id={"type": "label-button", "index": indx},
+                n_clicks_timestamp=0,
+                size="sm",
+                outline="True",
+                color="secondary",
+                style={"width": "100%", "border-color": "white"},
             ),
-            dbc.Col(
-                dbc.Button(
-                    className="fa fa-edit",
-                    id={"type": "color-label-button", "index": indx},
-                    size="sm",
-                    n_clicks_timestamp=0,
-                    style={
-                        "background-color": label_color,
-                        "border-color": label_color,
-                        "color": "black",
-                        "width": "100%",
-                    },
-                ),
-                width=1,
-                style={"margin-right": "2%", "width": "8%"},
+            dbc.Button(
+                className="fa fa-edit",
+                id={"type": "color-label-button", "index": indx},
+                size="sm",
+                n_clicks_timestamp=0,
+                outline="True",
+                color="secondary",
+                style={"width": "10%", "border-color": "white"},
             ),
-            dbc.Col(
-                dbc.Button(
-                    className="fa fa-trash",
-                    id={"type": "delete-label-button", "index": indx},
-                    n_clicks_timestamp=0,
-                    size="sm",
-                    style={
-                        "background-color": label_color,
-                        "border-color": label_color,
-                        "color": "black",
-                        "width": "100%",
-                    },
-                ),
-                width=1,
-                style={"width": "8%"},
+            dbc.Button(
+                className="fa fa-trash",
+                id={"type": "delete-label-button", "index": indx},
+                n_clicks_timestamp=0,
+                outline="True",
+                color="secondary",
+                size="sm",
+                style={"width": "10%", "border-color": "white"},
             ),
             dbc.Tooltip(
                 f"Keyboard shortcut: ctrl+{indx+1}",
@@ -70,14 +66,19 @@ def create_label_button(label_text, label_color, indx):
                 placement="top",
             ),
         ],
-        className="g-0",
-        style={"background-color": label_color},
+        style={
+            "border": "1px solid #EAECEF",
+            "borderRadius": "3px",
+            "marginBottom": "4px",
+            "display": "flex",
+            "justifyContent": "space-between",
+        },
     )
     return label_comp
 
 
 def create_label_component(
-    label_list,
+    label_list=[],
     color_cycle=px.colors.qualitative.Light24,
     mlcoach=False,
 ):
@@ -128,17 +129,33 @@ def create_label_component(
             )
     comp_list = comp_list + [
         dbc.Button(
+            "Add new label",
+            id="modify-list",
+            outline="True",
+            color="secondary",
+            size="sm",
+            style={"width": "100%"},
+        ),
+        dbc.Button(
             "Unlabel the Selected",
             id="un-label",
             className="ms-auto",
-            color="primary",
+            color="danger",
             size="sm",
             outline=True,
             style={"width": "100%", "margin-bottom": "10px", "margin-top": "10px"},
         ),
-        dbc.Label("Labeled images:"),
-        dbc.Progress(progress),
-        dbc.Label(total_num_labeled, id="total_labeled", style={"margin-top": "5px"}),
+        ControlItem(
+            "Labeled images:",
+            "labeled-images-title",
+            dbc.Progress(progress),
+        ),
+        dbc.Label(
+            total_num_labeled,
+            id="total_labeled",
+            style={"align-content": "center", "text-align": "right"},
+            size="sm",
+        ),
     ]
     return comp_list
 

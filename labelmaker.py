@@ -38,7 +38,6 @@ from src.callbacks.display_order import (  # noqa: F401
 )
 from src.callbacks.help import toggle_help_modal  # noqa: F401
 from src.callbacks.manage_labels import (  # noqa: F401
-    add_new_label,
     delete_label,
     label_selected_thumbnails,
     label_selected_thumbnails_key_binds,

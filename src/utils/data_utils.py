@@ -7,6 +7,8 @@ import logging
 import httpx
 from humanhash import humanize
 from tiled.client import from_uri
+from tiled.client.array import ArrayClient
+from tiled.client.container import Container
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,20 @@ class TiledDataLoader:
                 logger.warning(f"Error connecting to Tiled: {e}")
                 return False
         return True
+
+    def get_available_data_names(self):
+        """
+        Get available data names from the main Tiled container,
+        filtered by types that can be processed (Container and ArrayClient)
+        """
+        if self.data_client is None:
+            return []
+        data_names = [
+            name
+            for name in list(self.data_client)
+            if isinstance(self.data_client[name], (Container, ArrayClient))
+        ]
+        return data_names
 
     def prepare_project_container(self, user, project_name):
         """

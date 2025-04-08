@@ -3,7 +3,7 @@ import time
 
 import dash
 import numpy as np
-from dash import ALL, Input, Output, State, callback
+from dash import ALL, Input, Output, State, callback, no_update
 from dash.exceptions import PreventUpdate
 
 from src.labels import Labels, labels_tiled_dataloader
@@ -16,19 +16,23 @@ logger = logging.getLogger(__name__)
 @callback(
     Output("color-picker-modal", "is_open"),
     Input({"type": "color-label-button", "index": ALL}, "n_clicks"),
+    Input("modify-list", "n_clicks"),
     Input("modify-label-button", "n_clicks"),
     prevent_initial_call=True,
 )
-def toggle_color_picker_modal(color_label_n_clicks, submit_n_clicks):
+def toggle_color_picker_modal(
+    color_label_n_clicks, modify_list_n_clicks, submit_n_clicks
+):
     """
     This callback toggles the color picker modal for label color definition
     Args:
         color_label_n_clicks:       Number of clicks in all the label color buttons
+        modify_list_n_clicks:      Number of clicks in modify list button
         submit_n_clicks:            Number of clicks in submit color button
     Returns:
         Opens or closes the color picker modal
     """
-    if any(color_label_n_clicks):
+    if any(color_label_n_clicks) or modify_list_n_clicks > 0:
         return True
     elif submit_n_clicks:
         return False
@@ -264,12 +268,14 @@ def label_selected_thumbnails(
     Output("label-buttons", "children", allow_duplicate=True),
     Output("labels-dict", "data", allow_duplicate=True),
     Output("color-cycle", "data"),
+    Output("modify-list", "n_clicks"),
     Input("modify-label-button", "n_clicks"),
     State("labels-dict", "data"),
     State({"type": "color-label-button", "index": ALL}, "n_clicks_timestamp"),
     State("label-color-picker", "value"),
     State("color-cycle", "data"),
     State("modify-label-name", "value"),
+    State("modify-list", "n_clicks"),
     prevent_initial_call=True,
 )
 def modify_label(
@@ -279,6 +285,7 @@ def modify_label(
     new_color,
     color_cycle,
     new_label_name,
+    modify_list_n_clicks,
 ):
     """
     This callback modifies an existing label name and color
@@ -290,6 +297,7 @@ def modify_label(
         new_color:                      New color for the label
         color_cycle:                    List of label colors
         new_label_name:                 New label name
+        modify_list_n_clicks:          Number of clicks in modify list button
     Returns:
         label_comp:                     Updated label buttons
         labels_dict:                    Dictionary with labeling information, e.g.
@@ -299,14 +307,24 @@ def modify_label(
     start = time.time()
     labels_dict = decompress_dict(labels_dict)
     labels = Labels(**labels_dict)
-    mod_indx = color_label_t_clicks.index(max(color_label_t_clicks))
-    color_cycle[mod_indx] = new_color["hex"]
-    if new_label_name != "":
-        label_to_rename = labels.labels_list[mod_indx]
-        labels.update_labels_list(rename_label=label_to_rename, new_name=new_label_name)
-    label_comp = create_label_component(labels.labels_list, color_cycle)
-    logger.debug(f"Updating labels after {time.time()-start}")
-    return label_comp, compress_dict(labels.to_dict()), color_cycle
+    if modify_label_n_clicks == 0:
+        mod_indx = color_label_t_clicks.index(max(color_label_t_clicks))
+        color_cycle[mod_indx] = new_color["hex"]
+        if new_label_name != "":
+            label_to_rename = labels.labels_list[mod_indx]
+            labels.update_labels_list(
+                rename_label=label_to_rename, new_name=new_label_name
+            )
+        label_comp = create_label_component(labels.labels_list, color_cycle)
+        logger.debug(f"Updating labels after {time.time()-start}")
+        return label_comp, compress_dict(labels.to_dict()), color_cycle, no_update
+    else:
+        num_labels = len(labels.labels_list)
+        color_cycle[num_labels] = new_color["hex"]
+        labels.update_labels_list(add_label=new_label_name)
+        label_comp = create_label_component(labels.labels_list, color_cycle)
+        logger.debug(f"Updating labels after {time.time()-start}")
+        return label_comp, compress_dict(labels.to_dict()), color_cycle, 0
 
 
 @callback(
@@ -337,28 +355,28 @@ def delete_label(
     return label_comp, compress_dict(labels.to_dict()), color_cycle
 
 
-@callback(
-    Output("label-buttons", "children", allow_duplicate=True),
-    Output("labels-dict", "data", allow_duplicate=True),
-    Input("modify-list", "n_clicks"),
-    State("add-label-name", "value"),
-    State("labels-dict", "data"),
-    State("color-cycle", "data"),
-    prevent_initial_call=True,
-)
-def add_new_label(
-    modify_list_n_clicks,
-    add_label_name,
-    labels_dict,
-    color_cycle,
-):
-    start = time.time()
-    labels_dict = decompress_dict(labels_dict)
-    labels = Labels(**labels_dict)
-    labels.update_labels_list(add_label=add_label_name)
-    label_comp = create_label_component(labels.labels_list, color_cycle)
-    logger.debug(f"Updating labels after {time.time()-start}")
-    return label_comp, compress_dict(labels.to_dict())
+# @callback(
+#     Output("label-buttons", "children", allow_duplicate=True),
+#     Output("labels-dict", "data", allow_duplicate=True),
+#     Input("modify-list", "n_clicks"),
+#     State("add-label-name", "value"),
+#     State("labels-dict", "data"),
+#     State("color-cycle", "data"),
+#     prevent_initial_call=True,
+# )
+# def add_new_label(
+#     modify_list_n_clicks,
+#     add_label_name,
+#     labels_dict,
+#     color_cycle,
+# ):
+#     start = time.time()
+#     labels_dict = decompress_dict(labels_dict)
+#     labels = Labels(**labels_dict)
+#     labels.update_labels_list(add_label=add_label_name)
+#     label_comp = create_label_component(labels.labels_list, color_cycle)
+#     logger.debug(f"Updating labels after {time.time()-start}")
+#     return label_comp, compress_dict(labels.to_dict())
 
 
 @callback(
