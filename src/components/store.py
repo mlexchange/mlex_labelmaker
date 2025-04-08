@@ -67,14 +67,6 @@ def store_options():
                 is_open=False,
             ),
             dbc.Button(
-                "Download Labels as ZIP",
-                id="button-save-zip",
-                outline="True",
-                color="primary",
-                size="sm",
-                style={"width": "100%", "margin-bottom": "4px"},
-            ),
-            dbc.Button(
                 "Download Labels as Table",
                 id="button-save-table",
                 outline="True",

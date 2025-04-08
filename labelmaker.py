@@ -174,58 +174,6 @@ def load_labels_from_tiled(
 
 
 @app.long_callback(
-    Output("download-out", "data"),
-    Output("storage-modal", "is_open", allow_duplicate=True),
-    Output("storage-body-modal", "children", allow_duplicate=True),
-    Input("button-save-zip", "n_clicks"),
-    State({"base_id": "file-manager", "name": "data-project-dict"}, "data"),
-    State("labels-dict", "data"),
-    manager=long_callback_manager,
-    prevent_initial_call=True,
-    running=[
-        (Output("modal-store-progress", "is_open"), True, False),
-        (
-            Output("store-progress-title", "children"),
-            "Preparing labels for download...",
-            "",
-        ),
-    ],
-    progress=[Output("store-progress", "value")],
-)
-def save_labels_as_zip(
-    set_progress,
-    button_save_zip_n_clicks,
-    data_project_dict,
-    labels_dict,
-):
-    """
-    This callback saves the labels to disk
-    Args:
-        button_save_zip_n_clicks:       Button to save to disk as zip
-        data_project_dict:              Data project information
-        labels_dict:                    Dictionary of labeled images (docker path), as follows:
-                                        {filename1: [label1, label2], ...}
-    Returns:
-        download_out:                   Download output
-        storage_modal_open:             Open/closes the confirmation message
-        storage_body_modal:             Confirmation message
-    """
-    labels_dict = decompress_dict(labels_dict)
-    labels = Labels(**labels_dict)
-    if sum(labels.num_imgs_per_label.values()) > 0:
-        # Load data project
-        data_project = DataProject.from_dict(
-            data_project_dict, set_progress=set_progress, api_key=TILED_KEY
-        )
-
-        path_save = labels.save_to_directory(data_project)
-        response = "Download will start shortly"
-        return (dcc.send_file(f"{path_save}.zip", filename="files.zip"), True, response)
-
-    return dash.no_update, True, "No labels to save"
-
-
-@app.long_callback(
     Output("download-out", "data", allow_duplicate=True),
     Output("storage-modal", "is_open", allow_duplicate=True),
     Output("storage-body-modal", "children", allow_duplicate=True),

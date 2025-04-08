@@ -1,7 +1,6 @@
 import itertools
 import logging
 import os
-import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -312,53 +311,6 @@ class Labels:
         labels_table.to_csv(temp_file_name, index=False)
 
         return temp_file_name
-
-    def save_to_directory(self, data_project, set_progress):
-        """
-        Zips images with labels to be downloaded
-        """
-        with tempfile.TemporaryDirectory() as temp_dir:
-            data_path = os.path.join(temp_dir, "downloaded_images")
-
-            # Get the system's temporary directory
-            tmp_dir = tempfile.gettempdir()
-
-            # create a folder per label
-            for label_key in self.labels_list:
-                label_index = self.labels_list.index(label_key)
-                if self.num_imgs_per_label[str(label_index)] > 0:
-                    label_dir = data_path / Path(label_key)
-                    label_dir.mkdir(parents=True, exist_ok=True)
-
-            # save images to the corresponding label folder
-            indexes = self.labels_dict.keys()
-            imgs, uris = data_project.read_datasets(
-                list(map(int, indexes)),
-                export="pillow",
-                resize=False,
-            )
-
-            with ThreadPoolExecutor() as executor:
-                futures = []
-                for index, (_, label_index) in enumerate(self.labels_dict.items()):
-                    if len(label_index) > 0:
-                        save_image = partial(
-                            self._save_image,
-                            data_path,
-                            self.labels_list[label_index[0]],
-                            imgs[index],
-                            uris[index],
-                        )
-                        # Submit the function to the executor
-                        futures.append(executor.submit(save_image))
-
-                # Print the progress
-                for i, future in enumerate(as_completed(futures), 1):
-                    set_progress(i / len(futures) * 100)
-
-            archive_path = os.path.join(tmp_dir, "results")
-            shutil.make_archive(archive_path, "zip", data_path)
-        return archive_path
 
     @staticmethod
     def _save_image(data_path, label, image, uri):
