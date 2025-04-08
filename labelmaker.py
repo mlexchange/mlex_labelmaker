@@ -16,9 +16,8 @@ from src.app_layout import (  # noqa: F401
 )
 from src.callbacks.display import (  # noqa: F401;
     deselect,
-    display_indicator_off,
-    display_indicator_on,
     full_screen_thumbnail,
+    toggle_button_text,
     toggle_tabs_collapse,
     update_hide_button_text,
     update_label_dict_per_page,

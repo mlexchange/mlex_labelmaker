@@ -216,36 +216,13 @@ def label_method():
                             ),
                         ],
                     ),
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                dbc.Button(
-                                    "Find Similar Images",
-                                    id="find-similar-unsupervised",
-                                    outline="True",
-                                    color="primary",
-                                    size="sm",
-                                    style={"width": "100%", "margin-top": "20px"},
-                                )
-                            ),
-                            dbc.Col(
-                                dbc.Button(
-                                    "Stop Find Similar Images",
-                                    id="exit-similar-unsupervised",
-                                    outline="True",
-                                    color="primary",
-                                    size="sm",
-                                    style={"width": "100%", "margin-top": "20px"},
-                                )
-                            ),
-                        ],
-                    ),
-                    daq.Indicator(
-                        id="similarity-on-off-indicator",
-                        label="Find Similar Images: OFF",
-                        color="#596D4E",
-                        size=30,
-                        style={"margin-top": "20px", "margin-bottom": "20px"},
+                    dbc.Button(
+                        "Find Similar Images",
+                        id="find-similar-images",
+                        outline="True",
+                        color="primary",
+                        size="sm",
+                        style={"width": "100%", "margin-top": "20px"},
                     ),
                 ],
                 id="similarity-collapse",

@@ -1,4 +1,3 @@
-import os
 import time
 
 import dash
@@ -35,7 +34,7 @@ def update_project_name(data_project_dict):
     Input("log-transform", "value"),
     Input("min-max-percentile", "value"),
     State("labels-dict", "data"),
-    State("similarity-on-off-indicator", "color"),
+    State("find-similar-images", "n_clicks"),
     State("thumbnail-num-cols", "value"),
     State("thumbnail-num-rows", "value"),
     prevent_initial_call=True,
@@ -47,7 +46,7 @@ def update_output(
     log,
     percentiles,
     labels_dict,
-    similarity_on_off_color,
+    similarity_n_clicks,
     thumbnail_num_cols,
     thumbnail_num_rows,
 ):
@@ -61,10 +60,7 @@ def update_output(
         percentiles:            Min-Max Percentile
         labels_dict:            Dictionary with labeling information, e.g.
                                 {filename1: [label1,label2], ...}
-        data_project_dict:      Data project information
-        find_similar_images:    Find similar images button, n_clicks
-        tab_selection:          Current tab [Manual, Similarity, Probability]
-        card_id:                Card ID to identify the card index
+        similarity_n_clicks:    Number of clicks in the "Find Similar Images" button
         thumbnail_num_cols:     Number of thumbnail columns
         thumbnail_num_rows:     Number of thumbnail rows
     Returns:
@@ -110,7 +106,7 @@ def update_output(
     ] * (num_imgs_per_page - len(image_order))
 
     # Find similar images has been activated
-    if similarity_on_off_color == "green":
+    if similarity_n_clicks is not None and similarity_n_clicks % 2 == 1:
         init_clicks = 1
         query = Query(
             num_imgs=data_project.datasets[-1].cumulative_data_count, **labels_dict
@@ -398,63 +394,6 @@ def update_sort_button_text(n_clicks, current_text):
 
 
 @callback(
-    Output("similarity-on-off-indicator", "color", allow_duplicate=True),
-    Output("similarity-on-off-indicator", "label", allow_duplicate=True),
-    Input("find-similar-unsupervised", "n_clicks"),
-    State("similarity-model-list", "value"),
-    prevent_initial_call=True,
-)
-def display_indicator_on(n_clicks, similarity_model):
-    """
-    This callback controls the light indicator in the DataClinic tab, which indicates whether the
-    similarity-based image display is ON or OFF
-    Args:
-        n_clicks:           The button "Find Similar Images" triggers this callback
-        similarity_model:   Selected similarity-based model
-    Returns:
-        color:              Indicator color
-        label:              Indicator label
-    """
-    if similarity_model is None:
-        raise PreventUpdate
-    file_path = ".current_image_order.hdf5"
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    return "green", "Find Similar Images: ON"
-
-
-@callback(
-    Output("similarity-on-off-indicator", "color"),
-    Output("similarity-on-off-indicator", "label"),
-    Input("exit-similar-unsupervised", "n_clicks"),
-    Input({"base_id": "file-manager", "name": "total-num-data-points"}, "data"),
-    Input("button-hide", "n_clicks"),
-    Input("button-sort", "n_clicks"),
-    State("similarity-on-off-indicator", "color"),
-)
-def display_indicator_off(n_clicks, num_data_points, hide, sort, current_color):
-    """
-    This callback controls the light indicator in the DataClinic tab, which indicates whether the
-    similarity-based image display is ON or OFF
-    Args:
-        n_clicks:        The button "Exit Similar Images" triggers this callback
-        num_data_points: Total number of data points
-        hide:            Hide button
-        sort:            Sort button
-        current_color:   Current indicator color
-    Returns:
-        color:           Indicator color
-        label:           Indicator label
-    """
-    if current_color == "#596D4E":
-        raise PreventUpdate
-    file_path = ".current_image_order.hdf5"
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    return "#596D4E", "Find Similar Images: OFF"
-
-
-@callback(
     Output("probability-collapse", "is_open"),
     Output("similarity-collapse", "is_open"),
     Output("label-buttons-collapse", "is_open"),
@@ -505,3 +444,16 @@ def toggle_sidebar(n_clicks, is_open):
     else:
         style = {"padding": "0px 10px 0px 510px", "width": "100%"}
     return not is_open, style
+
+
+@callback(
+    Output("find-similar-images", "children"),
+    Input("find-similar-images", "n_clicks"),
+)
+def toggle_button_text(n_clicks):
+    """
+    This callback toggles the button text according to the selected labeling method
+    """
+    if n_clicks is None or n_clicks % 2 == 1:
+        return "Find Similar Images"
+    return "Stop Find Similar Images"

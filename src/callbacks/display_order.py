@@ -15,7 +15,7 @@ from src.utils.data_utils import decompress_dict
     Output("image-order", "data", allow_duplicate=True),
     Input({"base_id": "file-manager", "name": "total-num-data-points"}, "data"),
     Input("current-page", "value"),
-    Input("similarity-on-off-indicator", "color"),
+    Input("find-similar-images", "n_clicks"),
     Input("button-hide", "n_clicks"),
     Input("button-sort", "n_clicks"),
     Input("output-image-upload", "children"),
@@ -34,7 +34,7 @@ from src.utils.data_utils import decompress_dict
 def update_image_order(
     num_imgs,
     current_page,
-    similarity_on_off_color,
+    similarity_n_clicks,
     button_hide_n_clicks,
     button_sort_n_clicks,
     new_content,
@@ -57,7 +57,7 @@ def update_image_order(
     Args:
         num_imgs:                   Number of images in the dataset
         current_page:               Current page number
-        similarity_on_off_color:    Color of the similarity-based search button
+        similarity_n_clicks:        Find similar images button
         button_hide_n_clicks:       Hide button
         button_sort_n_clicks:       Sort button
         new_content:                Display dimensions have changed
@@ -113,7 +113,7 @@ def update_image_order(
                 return ordered_indx[indices]
 
     # Check if the similarity-based search is activated
-    elif similarity_on_off_color == "green":
+    elif similarity_n_clicks and similarity_n_clicks % 2 == 1:
         labels_dict = decompress_dict(labels_dict)
         query = Query(num_imgs=num_imgs, **labels_dict)
 
@@ -195,7 +195,7 @@ def undo_sort_or_hide_labeled_images(
     Output("current-page", "value", allow_duplicate=True),
     Input({"base_id": "file-manager", "name": "total-num-data-points"}, "data"),
     Input("first-page", "n_clicks"),
-    Input("find-similar-unsupervised", "n_clicks"),
+    Input("find-similar-images", "n_clicks"),
     Input("button-sort", "n_clicks"),
     prevent_initial_call=True,
 )
