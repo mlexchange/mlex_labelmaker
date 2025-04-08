@@ -18,6 +18,7 @@ from src.components.display_settings import display_settings
 from src.components.header import header
 from src.components.label_method import label_method
 from src.components.store import store_options
+from src.components.toggle_sidebar_affix import create_show_sidebar_affix
 
 cache = diskcache.Cache("./cache")
 long_callback_manager = DiskcacheLongCallbackManager(cache)
@@ -130,6 +131,7 @@ app.layout = html.Div(
                 display(),
             ],
         ),
+        create_show_sidebar_affix(),
         browser_cache(MLCOACH_URL, DATA_CLINIC_URL),
     ]
 )
