@@ -108,7 +108,8 @@ def create_label_component(
                     id={"type": "label-percentage", "index": i},
                     value=progress_values[i],
                     label=progress_labels[i],
-                    style={"background-color": color_cycle[i], "color": "black"},
+                    color=color_cycle[i],
+                    style={"color": "black"},
                     bar=True,
                 )
             )
@@ -137,15 +138,7 @@ def create_label_component(
             n_clicks=0,
             style={"width": "100%"},
         ),
-        dbc.Button(
-            "Unlabel the Selected",
-            id="un-label",
-            className="ms-auto",
-            color="danger",
-            size="sm",
-            outline=True,
-            style={"width": "100%", "margin-bottom": "10px", "margin-top": "10px"},
-        ),
+        html.P(),
         ControlItem(
             "Labeled images:",
             "labeled-images-title",

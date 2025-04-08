@@ -140,7 +140,7 @@ def label_method():
                     html.P(),
                     ControlItem(
                         "Label to Assign:",
-                        "label-name-title",
+                        "prob-label-name-title",
                         dbc.Select(
                             id="probability-label-name",
                             options=[],
@@ -252,6 +252,15 @@ def label_method():
                 is_open=False,
             ),
             dbc.Button(
+                "Unlabel the Selected",
+                id="un-label",
+                className="ms-auto",
+                color="danger",
+                size="sm",
+                outline=True,
+                style={"width": "100%", "margin-bottom": "10px", "margin-top": "10px"},
+            ),
+            dbc.Button(
                 "Unlabel All",
                 id="un-label-all",
                 outline="True",
@@ -262,17 +271,24 @@ def label_method():
             dbc.Modal(
                 id="color-picker-modal",
                 children=[
-                    dbc.Input(
-                        id="modify-label-name",
-                        value="",
-                        placeholder="Type new label name",
-                        style={"width": "100%", "margin-top": "1rem"},
+                    html.P(),
+                    ControlItem(
+                        "Label Name:",
+                        "label-name-title",
+                        dbc.Input(
+                            id="modify-label-name",
+                            value="",
+                            placeholder="Type new label name",
+                        ),
+                        style={"width": "80%", "margin": "0px"},
                     ),
+                    html.P(),
                     daq.ColorPicker(
                         id="label-color-picker",
                         label="Choose label color",
                         value=dict(hex="#119DFF"),
                     ),
+                    html.P(),
                     dbc.Button(
                         "Submit", id="modify-label-button", style={"width": "100%"}
                     ),
