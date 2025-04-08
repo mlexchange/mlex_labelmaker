@@ -52,7 +52,7 @@ DEFAULT_TILED_SUB_URI = os.getenv("DEFAULT_TILED_SUB_URI")
 TILED_KEY = os.getenv("TILED_KEY")
 if TILED_KEY == "":
     TILED_KEY = None
-DATA_DIR = os.getenv("DATA_DIR")
+READ_DIR = os.getenv("READ_DIR")
 USER = "admin"
 
 # Set up logging
@@ -60,7 +60,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 dash_file_explorer = FileManager(
-    DATA_DIR,
+    READ_DIR,
     open_explorer=False,
     api_key=TILED_KEY,
     logger=logger,

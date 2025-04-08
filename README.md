@@ -1,30 +1,66 @@
 # Label Maker
 Image labeling application with a Dash UI.
 
-## Install
+## Running Labeling Pipeline
 
-### Install the labeling pipeline (Labelmaker + Data Clinic + MLCoach)
+The **Prefect server, Tiled server and the application** are all defined within a **single Docker Compose file**. Each service runs in its own Docker container, simplifying the setup process while maintaining modularity.
 
-1. Start the compute and content services in the [MLExchange platform](https://github.com/mlexchange/mlex). Before moving to the next step, please make sure that the computing API and the content registry are up and running. For more information, please refer to their respective
-README files.
+However, the **Prefect worker** must be run separately on your local machine (refer to step 5).
 
-2. Start [splash-ml](https://github.com/als-computing/splash-ml)
+## Steps to Run the Application
 
-3. Start [Data Clinic](https://github.com/mlexchange/mlex_data_clinic) and [MLCoach](https://github.com/mlexchange/mlex_mlcoach)
+### 1 Clone the Repository
 
-3. Create a new Python environment and install dependencies:
-```
-conda create -n new_env python==3.11
-conda activate new_env
-pip install .
+```sh
+git clone https://github.com/mlexchange/mlex_labelmaker.git
+cd mlex_labelmaker
 ```
 
-4. Create a `.env` file using `.env.example` as reference. Update this file accordingly.
+### 2 Configure Environment Variables
 
-5. Start example app:
+Create a `.env` file using `.env.example` as a reference:
+
+```sh
+cp .env.example .env
 ```
-python labelmaker.py
+
+Then **update the** `.env` file with the correct values.
+
+### 3 Build and Start the Pipeline
+
+```sh
+docker compose up -d
 ```
+
+* `-d` → Runs the containers in the background (detached mode).
+
+### 4 Verify Running Containers
+
+```sh
+docker ps
+```
+
+### 5 Start a Prefect Worker
+
+Open another terminal and start a Prefect worker. Refer to [mlex_prefect_worker](https://github.com/mlexchange/mlex_prefect_worker) for detailed instructions on setting up and running the worker.
+
+
+### 6 Access the Application
+
+Once the container is running, open your browser and visit:
+* **Dash app:** http://localhost:8057/
+
+### 7 Stopping the Application
+
+To stop and remove the running containers, use:
+
+```sh
+docker compose down
+```
+
+This will **shut down all services** but **retain data** if volumes are used.
+
+**Important Note:** Due to the current tiled configuration, ensure that the `WRITE_DIR` is a subdirectory of the `READ_DIR` if the same tiled server is used for both reading data and writing results.
 
 ## Ingest data with MLExchange File Manager
 

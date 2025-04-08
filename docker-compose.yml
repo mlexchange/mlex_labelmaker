@@ -1,32 +1,116 @@
 version: '3.7'
 
 x-environment: &commonEnvironment
-    DIR_MOUNT: "${DATA_DIR}"
-    DATA_DIR: "/app/work/data"
-    PROJECT_ID: "-1"
-    MLCOACH_URL: "http://localhost:8062"
-    DATA_CLINIC_URL: "http://localhost:8072"
-    MLEX_COMPUTE_URL: ${MLEX_COMPUTE_URL}
-    MLEX_CONTENT_URL: ${MLEX_CONTENT_URL}
-    HOST_NICKNAME: "local"
-    TILED_KEY: "${TILED_KEY}"
+    # Data directories
+    READ_DIR_MOUNT: "${READ_DIR}"   # Used to mount the read directory in podman/docker jobs
+    WRITE_DIR_MOUNT: "${WRITE_DIR}" # Used to mount the write directory in podman/docker jobs
+    READ_DIR: "/tiled_storage"
+    WRITE_DIR: "/tiled_storage/writable"
+    # Data Tiled
     DEFAULT_TILED_URI: "${DEFAULT_TILED_URI}"
+    DEFAULT_TILED_QUERY: "${DEFAULT_TILED_QUERY}"
+    TILED_KEY: "${TILED_KEY}"
+    # Mask Tiled
+    MASK_TILED_URI: '${MASK_TILED_URI}'
+    MASK_TILED_API_KEY: '${MASK_TILED_API_KEY}'
+    # Labels Tiled
+    LABELS_TILED_URI: "${LABELS_TILED_URI}"
+    LABELS_TILED_API_KEY: "${LABELS_TILED_API_KEY}"
+    # Results Tiled
+    RESULTS_TILED_URI: "${RESULTS_TILED_URI}"
+    RESULTS_TILED_API_KEY: "${RESULTS_TILED_API_KEY}"
+    # Prefect
+    USER: "${USER}"
+    PREFECT_API_URL: ${PREFECT_API_URL}
+    # Applications
+    MLCOACH_URL: "http://host.docker.internal:8062"
+    DATA_CLINIC_URL: "http://host.docker.internal:8072"
+    # Dash
     APP_HOST: "0.0.0.0"
     APP_PORT: "8050"
 
 services:
+  prefect:
+    image: prefecthq/prefect:2.14-python3.11
+    command: prefect server start
+    container_name: prefect-server
+    environment:
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://${PREFECT_DB_USER}:${PREFECT_DB_PW}@prefect_db:5432/${PREFECT_DB_NAME} # Needed if using postgres and not sqlite
+      # - PREFECT_UI_API_URL=https://localhost/api. needed if nginx is handling ssl termination
+      - PREFECT_LOGGING_LEVEL=DEBUG
+    ports:
+      - "127.0.0.1:4200:4200"
+    depends_on:
+      - prefect_db
+    networks:
+      mle_net:
+
+  prefect_db:
+    image: postgres:14.5-alpine
+    container_name: prefect-db
+    environment:
+      - POSTGRES_USER=${PREFECT_DB_USER}
+      - POSTGRES_PASSWORD=${PREFECT_DB_PW}
+      - POSTGRES_DB=${PREFECT_DB_NAME}
+    volumes:
+      - ./data/prefect_db:/var/lib/postgresql/data:rw
+    restart: unless-stopped
+    networks:
+      mle_net:
+
+  tiled:
+    # see the file ./tiled/deploy/config.yml for detailed configuration of tiled
+    image: ghcr.io/bluesky/tiled:v0.1.0a118
+    container_name: tiled-server
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - TILED_DB_USER=${TILED_DB_USER}
+      - TILED_DB_PW=${TILED_DB_PW}
+      - TILED_DB_NAME=${TILED_DB_NAME}
+      - TILED_DB_SERVER=${TILED_DB_SERVER}
+      - TILED_SINGLE_USER_API_KEY=${TILED_SINGLE_USER_API_KEY}
+    volumes:
+      - ./tiled/deploy:/deploy
+      - ${READ_DIR}:/tiled_storage
+    depends_on:
+      - tiled_db
+    networks:
+      mle_net:
+
+  tiled_db:
+    image: postgres:14.5-alpine
+    container_name: tiled-db
+    environment:
+      - POSTGRES_USER=${TILED_DB_USER}
+      - POSTGRES_PASSWORD=${TILED_DB_PW}
+      - POSTGRES_DB=${TILED_DB_NAME}
+    volumes:
+      - ./data/tiled_db:/var/lib/postgresql/data:rw
+      - ${READ_DIR}:/tiled_storage
+    restart: unless-stopped
+    networks:
+      mle_net:
 
   labelmaker:
     container_name: "labelmaker"
-    image: ghcr.io/mlexchange/mlex_labelmaker:main
+    build:
+      context: "."
+    command: "python labelmaker.py"
     environment:
       *commonEnvironment
     volumes:
-      - $DATA_DIR:/app/work/data
+      - ${READ_DIR}:/tiled_storage
+      - ./src:/app/work/src
+      - ./labelmaker.py:/app/work/labelmaker.py
     ports:
       - 127.0.0.1:8057:8050
+    depends_on:
+      - tiled
+      - prefect
     networks:
-      - computing_api_default
+      - mle_net
 
   mlcoach:
     container_name: "mlcoach"
@@ -34,11 +118,14 @@ services:
     environment:
       *commonEnvironment
     volumes:
-      - $DATA_DIR:/app/work/data
+      - ${READ_DIR}:/tiled_storage
     ports:
       - 127.0.0.1:8062:8050
+    depends_on:
+      - tiled
+      - prefect
     networks:
-      - computing_api_default
+      - mle_net
 
   data_clinic:
     container_name: "data_clinic"
@@ -46,11 +133,14 @@ services:
     environment:
       *commonEnvironment
     volumes:
-      - $DATA_DIR:/app/work/data
+      - ${READ_DIR}:/tiled_storage
     ports:
       - 127.0.0.1:8072:8050
+    depends_on:
+      - tiled
+      - prefect
     networks:
-      - computing_api_default
+      - mle_net
 
   # ML algorithms
   autoencoders:
@@ -61,5 +151,11 @@ services:
 
 
 networks:
-  computing_api_default:
-    external: true
+  mle_net:
+    name: mle_net
+    driver: bridge
+
+# If services are already running on a different docker compose, use the following network definition
+# networks:
+#   mle_net:
+#     external: true
