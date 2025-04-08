@@ -2,12 +2,12 @@ import os
 import time
 
 import dash
-import pandas as pd
 from dash import ALL, MATCH, Input, Output, State, callback, ctx
 from dash.exceptions import PreventUpdate
 from file_manager.data_project import DataProject
 
 from src.app_layout import TILED_KEY, cache, logger
+from src.labels import labels_tiled_dataloader
 from src.query import Query
 from src.utils.data_utils import decompress_dict, hash_list_of_strings
 from src.utils.plot_utils import draw_rows, parse_full_screen_content
@@ -170,7 +170,9 @@ def update_probabilities(
 ):
     num_imgs_per_page = thumbnail_num_cols * thumbnail_num_rows
     if probability_model and tab_selection == "probability":
-        df_prob = pd.read_parquet(probability_model)
+        df_prob = labels_tiled_dataloader.get_data_by_trimmed_uri(
+            probability_model
+        ).read()
         probs = df_prob.iloc[image_order]
         probs = [
             " \n".join([f"{col}: {row[col]*100:.2f}" for col in probs.columns])

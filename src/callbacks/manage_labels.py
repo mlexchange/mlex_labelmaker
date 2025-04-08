@@ -3,11 +3,10 @@ import time
 
 import dash
 import numpy as np
-import pandas as pd
 from dash import ALL, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 
-from src.labels import Labels
+from src.labels import Labels, labels_tiled_dataloader
 from src.utils.data_utils import compress_dict, decompress_dict
 from src.utils.plot_utils import create_label_component
 
@@ -380,8 +379,8 @@ def load_labels_from_probabilities(
     labels_dict = decompress_dict(labels_dict)
     labels = Labels(**labels_dict)
     if probability_model:
-        df_prob = pd.read_parquet(probability_model)
-        probability_labels = list(df_prob.columns[0:])
+        label_table = labels_tiled_dataloader.get_data_by_trimmed_uri(probability_model)
+        probability_labels = list(label_table)
         additional_labels = list(set(probability_labels) - set(labels.labels_list))
         for additional_label in additional_labels:
             labels.update_labels_list(add_label=additional_label)

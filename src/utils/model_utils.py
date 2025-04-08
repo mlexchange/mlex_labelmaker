@@ -81,6 +81,10 @@ def get_trained_models_list(user, similarity=True, project_name=None):
             tags=["data-clinic", project_name, "inference"],
             state=[StateType.COMPLETED],
         )
+        keyword = "feature_vectors"
+    else:
+        keyword = "probabilities"
+
     flow_runs += query_flow_runs(
         FLOW_NAME,
         tags=["mlcoach", project_name, "inference"],
@@ -95,11 +99,11 @@ def get_trained_models_list(user, similarity=True, project_name=None):
         else:
             job_id = children_flow_run_ids[0]
 
-        # TODO: Modify path to f"/{USER}/{project_name}/feature_vectors/{job_id}"
+        # TODO: Modify path to f"/{USER}/{project_name}/{keyword}/{job_id}"
         trained_models.append(
             {
                 "label": flow_run.name,
-                "value": f"/{USER}/{project_name}/{job_id}/feature_vectors",
+                "value": f"/{USER}/{project_name}/{job_id}/{keyword}",
             }
         )
     return trained_models

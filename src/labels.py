@@ -144,7 +144,9 @@ class Labels:
             probability_label:      Label to be assigned across the data set
             threshold:              Probability threshold to assign labels
         """
-        df_prob = pd.read_parquet(probability_model)
+        df_prob = labels_tiled_dataloader.get_data_by_trimmed_uri(
+            probability_model
+        ).read()
         indices = np.where(df_prob[probability_label] > threshold / 100)[0].tolist()
         self.assign_labels(probability_label, indices, overwrite=False)
         pass
