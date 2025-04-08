@@ -37,6 +37,10 @@ from src.callbacks.display_order import (  # noqa: F401
     update_image_order,
 )
 from src.callbacks.help import toggle_help_modal  # noqa: F401
+from src.callbacks.infrastructure_check import (  # noqa: F401
+    check_infra_state,
+    update_infra_state,
+)
 from src.callbacks.manage_labels import (  # noqa: F401
     delete_label,
     label_selected_thumbnails,

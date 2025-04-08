@@ -16,6 +16,7 @@ from src.components.data_transformations import data_transformations
 from src.components.display import display
 from src.components.display_settings import display_settings
 from src.components.header import header
+from src.components.infrastructure import create_infra_state_affix
 from src.components.label_method import label_method
 from src.components.store import store_options
 from src.components.toggle_sidebar_affix import create_show_sidebar_affix
@@ -132,6 +133,7 @@ app.layout = html.Div(
             ],
         ),
         create_show_sidebar_affix(),
+        create_infra_state_affix(),
         browser_cache(MLCOACH_URL, DATA_CLINIC_URL),
     ]
 )
