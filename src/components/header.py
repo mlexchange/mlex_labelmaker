@@ -1,5 +1,6 @@
 import dash_bootstrap_components as dbc
 from dash import html
+from dash_iconify import DashIconify
 
 
 def header(app_title, github_url):
@@ -46,29 +47,54 @@ def header(app_title, github_url):
                                     dbc.Nav(
                                         [
                                             dbc.NavItem(
-                                                dbc.Button(
-                                                    className="fa fa-github",
-                                                    style={
-                                                        "font-size": "30px",
-                                                        "margin-right": "1rem",
-                                                        "color": "#00313C",
-                                                        "border": "0px",
-                                                        "background-color": "white",
-                                                    },
-                                                    href=github_url,
-                                                )
+                                                [
+                                                    dbc.Button(
+                                                        DashIconify(
+                                                            icon="lucide:github"
+                                                        ),
+                                                        id="github-button",
+                                                        style={
+                                                            "display": "flex",
+                                                            "font-size": "40px",
+                                                            "padding": "5px",
+                                                            "margin-right": "1rem",
+                                                            "color": "#00313C",
+                                                            "background-color": "white",
+                                                            "border": "0px",
+                                                        },
+                                                        href=github_url,
+                                                    ),
+                                                    dbc.Tooltip(
+                                                        "Go to GitHub Repository",
+                                                        target="github-button",
+                                                        placement="bottom",
+                                                    ),
+                                                ],
                                             ),
                                             dbc.NavItem(
-                                                dbc.Button(
-                                                    className="fa fa-question-circle-o",
-                                                    style={
-                                                        "font-size": "30px",
-                                                        "color": "#00313C",
-                                                        "background-color": "white",
-                                                        "border": "0px",
-                                                    },
-                                                    href="https://mlexchange.als.lbl.gov",
-                                                )
+                                                [
+                                                    dbc.Button(
+                                                        DashIconify(
+                                                            icon="lucide:circle-help"
+                                                        ),
+                                                        id="help-button",
+                                                        style={
+                                                            "display": "flex",
+                                                            "font-size": "40px",
+                                                            "padding": "5px",
+                                                            "margin-right": "1rem",
+                                                            "color": "#00313C",
+                                                            "background-color": "white",
+                                                            "border": "0px",
+                                                        },
+                                                        href=f"{github_url}/blob/main/README.md",
+                                                    ),
+                                                    dbc.Tooltip(
+                                                        "Go to Docs",
+                                                        target="help-button",
+                                                        placement="bottom",
+                                                    ),
+                                                ]
                                             ),
                                         ],
                                         navbar=True,
