@@ -1,5 +1,4 @@
 import dash_bootstrap_components as dbc
-import dash_daq as daq
 from dash import html
 
 
@@ -47,26 +46,6 @@ def display():
                 id={"type": "full-screen-modal", "index": 0},
                 size="xl",
                 centered=True,
-                is_open=False,
-            ),
-            dbc.Modal(
-                id="color-picker-modal",
-                children=[
-                    dbc.Input(
-                        id="modify-label-name",
-                        value="",
-                        placeholder="Type new label name",
-                        style={"width": "100%", "margin-top": "1rem"},
-                    ),
-                    daq.ColorPicker(
-                        id="label-color-picker",
-                        label="Choose label color",
-                        value=dict(hex="#119DFF"),
-                    ),
-                    dbc.Button(
-                        "Submit", id="modify-label-button", style={"width": "100%"}
-                    ),
-                ],
                 is_open=False,
             ),
         ]

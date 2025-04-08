@@ -1,60 +1,47 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+from mlex_utils.dash_utils.components_bootstrap.component_utils import (
+    DbcControlItem as ControlItem,
+)
 
 from src.utils.mask_utils import get_mask_options
 
 
 def data_transformations():
-    display_settings = html.Div(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(dbc.Label("Log Transform"), width=4, align="start"),
-                    dbc.Col(
-                        dbc.Switch(
-                            id="log-transform",
-                            value=False,
-                            label_style={"display": "none"},
-                            style={"height": "20px"},
-                        ),
-                        align="start",
-                    ),
-                ],
+    display_settings = [
+        ControlItem(
+            "",
+            "empty-title-log-transform",
+            dbc.Switch(
+                id="log-transform",
+                value=False,
+                label="Log Transform",
             ),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        dbc.Label("Min-Max Percentile"),
-                        width=4,
-                    ),
-                    dbc.Col(
-                        dcc.RangeSlider(
-                            id="min-max-percentile",
-                            min=0,
-                            max=100,
-                            tooltip={
-                                "placement": "bottom",
-                                "always_visible": True,
-                            },
-                        ),
-                    ),
-                ],
-                style={"margin-bottom": "10px"},
+        ),
+        html.P(),
+        ControlItem(
+            "Min-Max Percentile",
+            "min-max-percentile-title",
+            dcc.RangeSlider(
+                id="min-max-percentile",
+                min=0,
+                max=100,
+                tooltip={
+                    "placement": "bottom",
+                    "always_visible": True,
+                },
+                value=[0, 100],
             ),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        dbc.Label("Mask Selection"),
-                        width=4,
-                    ),
-                    dbc.Col(
-                        dcc.Dropdown(
-                            id="mask-dropdown",
-                            options=get_mask_options(),
-                        ),
-                    ),
-                ]
+        ),
+        html.P(),
+        ControlItem(
+            "Mask Selection",
+            "mask-dropdown-title",
+            dbc.Select(
+                id="mask-dropdown",
+                options=get_mask_options(),
+                value="None",
             ),
-        ]
-    )
+        ),
+    ]
     return display_settings

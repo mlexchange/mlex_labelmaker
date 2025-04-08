@@ -1,14 +1,24 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+from mlex_utils.dash_utils.components_bootstrap.component_utils import (
+    DbcControlItem as ControlItem,
+)
 
 
 def display_settings():
     display_settings = html.Div(
         [
-            dbc.Label("Number of Thumbnail Columns"),
-            dcc.Slider(1, 6, 1, value=6, id="thumbnail-num-cols"),
-            dbc.Label("Number of Thumbnail Rows"),
-            dcc.Slider(1, 6, 1, value=3, id="thumbnail-num-rows"),
+            ControlItem(
+                "Number of Columns:",
+                "num-cols-title",
+                dcc.Slider(1, 6, 1, value=6, id="thumbnail-num-cols"),
+            ),
+            html.P(),
+            ControlItem(
+                "Number of Rows:",
+                "num-rows-title",
+                dcc.Slider(1, 6, 1, value=3, id="thumbnail-num-rows"),
+            ),
             dbc.Button(
                 "Sort",
                 id="button-sort",

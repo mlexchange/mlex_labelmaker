@@ -2,10 +2,12 @@ import dash_bootstrap_components as dbc
 import dash_daq as daq
 from dash import dcc, html
 from dash_extensions import EventListener
+from dash_iconify import DashIconify
+from mlex_utils.dash_utils.components_bootstrap.component_utils import (
+    DbcControlItem as ControlItem,
+)
 
 from src.utils.plot_utils import create_label_component
-
-LABEL_LIST = {"Label_1": [], "Label_2": []}
 
 
 def label_method():
@@ -81,50 +83,11 @@ def label_method():
                 id="goto-webpage-collapse",
                 is_open=False,
             ),
-            dbc.Collapse(
-                children=[
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                dcc.Input(
-                                    id="add-label-name",
-                                    placeholder="Input new label here",
-                                    style={
-                                        "width": "100%",
-                                        "margin-bottom": "10px",
-                                        "margin-top": "5px",
-                                    },
-                                ),
-                                width=8,
-                            ),
-                            dbc.Col(
-                                dbc.Button(
-                                    "Add Label",
-                                    id="modify-list",
-                                    outline="True",
-                                    size="sm",
-                                    color="primary",
-                                    n_clicks=0,
-                                    style={
-                                        "width": "100%",
-                                        "margin-bottom": "10px",
-                                        "margin-top": "5px",
-                                    },
-                                ),
-                                width=4,
-                            ),
-                        ],
-                        justify="center",
-                    )
-                ],
-                id="manual-collapse",
-                is_open=False,
-            ),
             # manual tab is default button group
             dbc.Collapse(
                 children=html.Div(
                     id="label-buttons",
-                    children=create_label_component(LABEL_LIST.keys()),
+                    children=create_label_component(),
                     style={"margin-bottom": "0.5rem"},
                 ),
                 id="label-buttons-collapse",
@@ -133,34 +96,69 @@ def label_method():
             # Labeling with Probabilities
             dbc.Collapse(
                 children=[
-                    dbc.Label("Trained models:"),
-                    dbc.Row(
+                    ControlItem(
+                        "Trained models:",
+                        "prob-model-title",
                         [
-                            dbc.Col(dcc.Dropdown(id="probability-model-list"), width=8),
-                            dbc.Col(
-                                dbc.Button(
-                                    "Refresh",
-                                    id="probability-model-refresh",
-                                    outline="True",
-                                    color="primary",
-                                    size="sm",
-                                    style={"width": "100%", "margin-top": "1px"},
-                                )
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dbc.Select(
+                                            id="probability-model-list",
+                                            options=[],
+                                            value=None,
+                                        ),
+                                        width=10,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Button(
+                                            DashIconify(
+                                                icon="mdi:refresh-circle",
+                                                width=20,
+                                                style={"display": "block"},
+                                            ),
+                                            id="probability-model-refresh",
+                                            color="secondary",
+                                            size="sm",
+                                            className="rounded-circle",
+                                            style={
+                                                "aspectRatio": "1 / 1",
+                                                "paddingLeft": "1px",
+                                                "paddingRight": "1px",
+                                                "paddingTop": "1px",
+                                                "paddingBottom": "1px",
+                                            },
+                                        ),
+                                        className="d-flex justify-content-center align-items-center",
+                                        width=2,
+                                    ),
+                                ],
+                                className="g-1",
                             ),
-                        ]
+                        ],
                     ),
-                    dbc.Label(
-                        "Probability Threshold",
-                        style={"width": "100%", "margin-top": "20px"},
+                    html.P(),
+                    ControlItem(
+                        "Label to Assign:",
+                        "label-name-title",
+                        dbc.Select(
+                            id="probability-label-name",
+                            options=[],
+                            value=None,
+                        ),
                     ),
-                    dcc.Dropdown(id="probability-label-name"),
-                    dcc.Slider(
-                        id="probability-threshold",
-                        min=0,
-                        max=100,
-                        value=51,
-                        tooltip={"placement": "top", "always_visible": True},
-                        marks={0: "0", 25: "25", 50: "50", 75: "75", 100: "100"},
+                    html.P(),
+                    ControlItem(
+                        "Probability Threshold:",
+                        "prob-threshold-title",
+                        dcc.Slider(
+                            id="probability-threshold",
+                            min=0,
+                            max=100,
+                            value=51,
+                            tooltip={"placement": "top", "always_visible": True},
+                            marks={0: "0", 25: "25", 50: "50", 75: "75", 100: "100"},
+                        ),
                     ),
                     dbc.Button(
                         "Label with Threshold",
@@ -177,21 +175,46 @@ def label_method():
             # Labeling with similarity-based search
             dbc.Collapse(
                 children=[
-                    dbc.Label("Trained models:"),
-                    dbc.Row(
+                    ControlItem(
+                        "Trained models:",
+                        "similarity-model-title",
                         [
-                            dbc.Col(dcc.Dropdown(id="similarity-model-list"), width=8),
-                            dbc.Col(
-                                dbc.Button(
-                                    "Refresh",
-                                    id="similarity-model-refresh",
-                                    outline="True",
-                                    color="primary",
-                                    size="sm",
-                                    style={"width": "100%", "margin-top": "1px"},
-                                )
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        dbc.Select(
+                                            id="similarity-model-list",
+                                            options=[],
+                                            value=None,
+                                        ),
+                                        width=10,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Button(
+                                            DashIconify(
+                                                icon="mdi:refresh-circle",
+                                                width=20,
+                                                style={"display": "block"},
+                                            ),
+                                            id="similarity-model-refresh",
+                                            color="secondary",
+                                            size="sm",
+                                            className="rounded-circle",
+                                            style={
+                                                "aspectRatio": "1 / 1",
+                                                "paddingLeft": "1px",
+                                                "paddingRight": "1px",
+                                                "paddingTop": "1px",
+                                                "paddingBottom": "1px",
+                                            },
+                                        ),
+                                        className="d-flex justify-content-center align-items-center",
+                                        width=2,
+                                    ),
+                                ],
+                                className="g-1",
                             ),
-                        ]
+                        ],
                     ),
                     dbc.Row(
                         [
@@ -235,6 +258,26 @@ def label_method():
                 color="danger",
                 size="sm",
                 style={"width": "100%", "margin-bottom": "4px", "margin-top": "4px"},
+            ),
+            dbc.Modal(
+                id="color-picker-modal",
+                children=[
+                    dbc.Input(
+                        id="modify-label-name",
+                        value="",
+                        placeholder="Type new label name",
+                        style={"width": "100%", "margin-top": "1rem"},
+                    ),
+                    daq.ColorPicker(
+                        id="label-color-picker",
+                        label="Choose label color",
+                        value=dict(hex="#119DFF"),
+                    ),
+                    dbc.Button(
+                        "Submit", id="modify-label-button", style={"width": "100%"}
+                    ),
+                ],
+                is_open=False,
             ),
             dbc.Modal(
                 [

@@ -455,7 +455,6 @@ def display_indicator_off(n_clicks, num_data_points, hide, sort, current_color):
 
 
 @callback(
-    Output("manual-collapse", "is_open"),
     Output("probability-collapse", "is_open"),
     Output("similarity-collapse", "is_open"),
     Output("label-buttons-collapse", "is_open"),
@@ -484,7 +483,6 @@ def toggle_tabs_collapse(tab_value, previous_tab):
     else:
         previous_tab.append(tab_value)
     return (
-        tabs["manual"],
         tabs["probability"],
         tabs["similarity"],
         show_label_buttons,

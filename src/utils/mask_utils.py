@@ -1,6 +1,11 @@
-import glob
+import os
 
-import pyFAI.detectors as detectors
+from src.utils.data_utils import TiledDataLoader
+
+mask_tiled_uri = os.getenv("MASK_TILED_URI")
+mask_tiled_api_key = os.getenv("MASK_TILED_API_KEY", None)
+
+tiled_mask = TiledDataLoader(mask_tiled_uri, mask_tiled_api_key)
 
 
 def get_mask_options():
@@ -9,15 +14,11 @@ def get_mask_options():
     Returns:
         mask_options:       List of mask options
     """
-    # Get the mask files
-    mask_files = glob.glob("assets/masks/*.tif")
-    mask_options = []
-    for mask_file in mask_files:
-        mask_options.append({"label": mask_file.split("/")[-1], "value": mask_file})
+    masks = tiled_mask.get_available_data_names()
 
-    # Get the pyFAI detector masks
-    pyfai_detectors = detectors.ALL_DETECTORS.keys()
-    mask_options = [
-        {"label": detector, "value": detector} for detector in pyfai_detectors
-    ]
+    mask_options = [{"label": "None", "value": None}]
+
+    for mask in masks:
+        mask_options.append({"label": mask, "value": f"{mask_tiled_uri}/{mask}"})
+
     return mask_options

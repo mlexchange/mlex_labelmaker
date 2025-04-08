@@ -59,10 +59,12 @@ logger = logging.getLogger(__name__)
 
 dash_file_explorer = FileManager(
     DATA_DIR,
+    open_explorer=False,
     api_key=TILED_KEY,
     logger=logger,
 )
 dash_file_explorer.init_callbacks(app)
+file_explorer = dash_file_explorer.file_explorer
 
 # APP LAYOUT
 app.title = "Label Maker"
@@ -74,65 +76,59 @@ app.layout = html.Div(
             "MLExchange | Label Maker",
             "https://github.com/mlexchange/mlex_dash_labelmaker_demo",
         ),
-        dbc.Container(
-            [
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                dbc.Accordion(
-                                    [
-                                        dbc.AccordionItem(
-                                            data_transformations(),
-                                            title="Data Transformations",
-                                            item_id="data-transformations",
-                                        ),
-                                        dbc.AccordionItem(
-                                            label_method(),
-                                            title="Labeling Method",
-                                            item_id="label-method",
-                                        ),
-                                        dbc.AccordionItem(
-                                            store_options(),
-                                            title="Store Options",
-                                            item_id="store-options",
-                                        ),
-                                        dbc.AccordionItem(
-                                            display_settings(),
-                                            title="Display Settings",
-                                            item_id="display-settings",
-                                        ),
-                                    ],
-                                    active_item="label-method",
-                                    style={
-                                        "position": "sticky",
-                                        "top": "10%",
-                                        "width": "100%",
-                                    },
-                                )
-                            ],
-                            width=4,
-                            style={"display": "flex"},
-                        ),
-                        dbc.Col(
-                            [
-                                dash_file_explorer.file_explorer,
-                                dcc.Loading(
-                                    id="loading-display",
-                                    parent_className="transparent-loader-wrapper",
-                                    children=[html.Div(id="output-image-upload")],
-                                    type="circle",
-                                ),
-                                display(),
-                            ],
-                            width=8,
-                        ),
-                    ],
-                    justify="center",
+        dbc.Offcanvas(
+            id="sidebar-offcanvas",
+            is_open=True,
+            backdrop=False,
+            scrollable=True,
+            style={
+                "padding": "80px 0px 0px 0px",
+                "width": "500px",
+            },  # Avoids being covered by the navbar
+            title="Controls",
+            children=dbc.Accordion(
+                id="sidebar",
+                always_open=True,
+                children=[
+                    dbc.AccordionItem(
+                        title="Data selection",
+                        children=file_explorer,
+                    ),
+                    dbc.AccordionItem(
+                        data_transformations(),
+                        title="Data Transformations",
+                        item_id="data-transformations",
+                    ),
+                    dbc.AccordionItem(
+                        label_method(),
+                        title="Labeling Method",
+                        item_id="label-method",
+                    ),
+                    dbc.AccordionItem(
+                        store_options(),
+                        title="Store Options",
+                        item_id="store-options",
+                    ),
+                    dbc.AccordionItem(
+                        display_settings(),
+                        title="Display Settings",
+                        item_id="display-settings",
+                    ),
+                ],
+            ),
+        ),
+        html.Div(
+            id="main-display",
+            style={"padding": "0px 10px 0px 510px"},
+            children=[
+                dcc.Loading(
+                    id="loading-display",
+                    parent_className="transparent-loader-wrapper",
+                    children=[html.Div(id="output-image-upload")],
+                    type="circle",
                 ),
+                display(),
             ],
-            fluid=True,
-            style={"margin-top": "1%"},
         ),
         browser_cache(MLCOACH_URL, DATA_CLINIC_URL),
     ]
