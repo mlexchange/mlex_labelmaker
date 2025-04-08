@@ -134,6 +134,7 @@ def create_label_component(
             outline="True",
             color="secondary",
             size="sm",
+            n_clicks=0,
             style={"width": "100%"},
         ),
         dbc.Button(
