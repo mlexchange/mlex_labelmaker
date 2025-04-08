@@ -48,6 +48,7 @@ def display():
                 centered=True,
                 is_open=False,
             ),
-        ]
+        ],
+        style={"width": "99%"},
     )
     return display

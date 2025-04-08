@@ -126,7 +126,12 @@ app.layout = html.Div(
                 dcc.Loading(
                     id="loading-display",
                     parent_className="transparent-loader-wrapper",
-                    children=[html.Div(id="output-image-upload")],
+                    children=[
+                        html.Div(
+                            id="output-image-upload",
+                            style={"margin": "0 auto"},
+                        ),
+                    ],
                     type="circle",
                 ),
                 display(),
