@@ -148,6 +148,11 @@ def label_selected_thumbnails_new_dataset(
     start = time.time()
     labels_dict = decompress_dict(labels_dict)
     labels = Labels(**labels_dict)
+    label_button_children = []
+    for indx in range(len(label_button_children)):
+        label_button_children.append(
+            label_button_children[indx]["props"]["children"][1]
+        )
     labels.init_labels(label_button_children)
     logger.debug(f"Updating labels after {time.time()-start}")
     return compress_dict(labels.to_dict())
@@ -359,30 +364,6 @@ def delete_label(
     label_comp = create_label_component(labels.labels_list, color_cycle)
     logger.debug(f"Updating labels after {time.time()-start}")
     return label_comp, compress_dict(labels.to_dict()), color_cycle
-
-
-# @callback(
-#     Output("label-buttons", "children", allow_duplicate=True),
-#     Output("labels-dict", "data", allow_duplicate=True),
-#     Input("modify-list", "n_clicks"),
-#     State("add-label-name", "value"),
-#     State("labels-dict", "data"),
-#     State("color-cycle", "data"),
-#     prevent_initial_call=True,
-# )
-# def add_new_label(
-#     modify_list_n_clicks,
-#     add_label_name,
-#     labels_dict,
-#     color_cycle,
-# ):
-#     start = time.time()
-#     labels_dict = decompress_dict(labels_dict)
-#     labels = Labels(**labels_dict)
-#     labels.update_labels_list(add_label=add_label_name)
-#     label_comp = create_label_component(labels.labels_list, color_cycle)
-#     logger.debug(f"Updating labels after {time.time()-start}")
-#     return label_comp, compress_dict(labels.to_dict())
 
 
 @callback(
